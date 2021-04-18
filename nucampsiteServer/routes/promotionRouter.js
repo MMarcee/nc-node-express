@@ -1,46 +1,77 @@
 const express = require('express');
+const Promotion = require('../models/promotion');
+
 const promotionRouter = express.Router();
 
 promotionRouter.route('/')
-.all((req, res, next) => {
-    res.statusCode =200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
+.get((req, res, next) => {
+    Promotion.find()
+    .then(promotions => {
+        res.statusCode = 200;
+        res.setHeader('Content-type', 'application/json');
+        res.json(promotions);
+    })
+    .catch(err => next(err));
 })
-.get((req, res) => {
-    res.end('Will send all the promotions to you');
+.post((req, res, next) => {
+    Promotion.create(req.body)
+    .then(promotion => {
+        console.log('Promotion Created ', promotion);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
 })
-.post((req, res) => {
-    res.end(`Will add the promotions: ${req.body.name} with description: ${req.body.description}`);
-})
+// Operation not allowed due to general context of request -- cannot update all items in document with same information is that is not the intent.
 .put((req, res) => {
     res.statusCode = 403;
-    res.end('PUT operation not supported on /promotions');
+    res.end('PUT operation not supported on /campsites');
 })
-.delete((req, res) => {
-    res.end('Deleting all promotions');
+.delete((req, res, next) => {
+    Promotion.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
-// @Workshop Week 1 Task 1:
+// This part accesses a specific promotion by id:
 promotionRouter.route('/:promotionId')
-.all((req, res, next) => {
-    res.statusCode =200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-.get((req, res) => {
-    res.end(`Will send details of the promotions: ${req.params.promotionId} to you`);
+.get((req, res, next) => {
+    Promotion.findById(req.params.promotionId)
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
  })
 .post((req, res) => {
     res.statusCode = 403;
-    res.end(`POST operation not supported on /promotions/${req.params.promotionId}`)
+    res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
 })
-.put((req, res) => {
-    res.write(`Updating the promotions: ${req.params.promotionId}\n`);
-    res.end(`Will update the promotions: ${req.body.name}
-    with description: ${req.body.description}`);
+// Operation allowed due to id specific nature of the request. Any changes will only be made on the requested id.
+.put((req, res, next) => {
+    Promotion.findByIdAndUpdate(req.params.promotionId, {
+        $set: req.body
+    }, { new: true })
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
 })
-.delete((req, res) => {
-    res.end(`Deleting promotions: ${req.params.promotionId}`);
+.delete((req, res, next) => {
+    Promotion.findByIdAndDelete(req.params.promotionId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
 module.exports = promotionRouter;

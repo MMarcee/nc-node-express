@@ -1,46 +1,79 @@
+// @Required dependencies:
 const express = require('express');
+const Partner = require('../models/partner');
+
 const partnerRouter = express.Router();
 
+// @Main entry point for all reqs:
 partnerRouter.route('/')
-.all((req, res, next) => {
-    res.statusCode =200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
+.get((req, res, next) => {
+    Partner.find()
+    .then(partners => { // If successful return proceed with res
+        res.statusCode = 200;
+        res.setHeader('Content-type', 'application/json');
+        res.json(partners);
+    })
+    .catch(err => next(err)); //If failed return error
 })
-.get((req, res) => {
-    res.end('Will send all the partners to you');
+.post((req, res, next) => {
+    Partner.create(req.body)
+    .then(partner => {
+        console.log('Partner Created ', partner);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partner);
+    })
+    .catch(err => next(err));
 })
-.post((req, res) => {
-    res.end(`Will add the partners: ${req.body.name} with description: ${req.body.description}`);
-})
+// Operation not allowed due to general context of request -- cannot update all items in document with same information is that is not the intent.
 .put((req, res) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /partners');
 })
-.delete((req, res) => {
-    res.end('Deleting all partners');
+.delete((req, res, next) => {
+    Partner.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
-// @Workshop Week 1 Task 1:
+
 partnerRouter.route('/:partnerId')
-.all((req, res, next) => {
-    res.statusCode =200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-.get((req, res) => {
-    res.end(`Will send details of the partners: ${req.params.partnerId} to you`);
+.get((req, res, next) => {
+    Partner.findById(req.params.partnerId)
+    .then(partner => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partner);
+    })
+    .catch(err => next(err));
  })
 .post((req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /partners/${req.params.partnerId}`)
 })
-.put((req, res) => {
-    res.write(`Updating the partners: ${req.params.partnerId}\n`);
-    res.end(`Will update the partners: ${req.body.name}
-    with description: ${req.body.description}`);
+// Operation allowed due to id specific nature of request. Any changes will only be made on the requested id. 
+.put((req, res, next) => {
+    Partner.findByIdAndUpdate(req.params.partnerId, {
+        $set: req.body
+    }, { new: true })
+    .then(partner => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partner);
+    })
+    .catch(err => next(err));   
 })
-.delete((req, res) => {
-    res.end(`Deleting partners: ${req.params.partnerId}`);
+.delete((req, res, next) => {
+    Partner.findByIdAndDelete(req.params.partnerId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
 module.exports = partnerRouter;
