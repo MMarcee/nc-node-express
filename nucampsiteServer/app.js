@@ -3,6 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session')
+const FileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -35,13 +37,23 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('456456-123231-777777-777777'));
+//app.use(cookieParser('456456-123231-777777-777777')); Note: Cannot use cookieParser and express session together. It will cause a conflict with implementation because both differ.
+
+app.use(session({
+  name: 'session-id',
+  secret: '456456-123231-777777-777777',
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}));
 
 // @Authentication Middleware to serve static files:
 // The authentication being placed above the app.use(express.static(path.join(__dirname, 'public'))); forces user to authenticate before having access to the static files.
 // Placing the authentication below the app.use(express.static(path.join(__dirname, 'public'))); allows user to have access to the static files without authenticating.
 function auth(req, res, next) {
-  if(!req.signedCookies.user) {
+  console.log(req.session);
+
+  if(!req.session.user) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       const err = new Error('You are not authenticated!');
@@ -54,7 +66,7 @@ function auth(req, res, next) {
     const user = auth[0];
     const pass = auth[1];
     if (user === 'admin' && pass === 'password') {
-      res.cookie('user', 'admin', {signed: true});
+      req.session.user = 'admin';
       return next(); // authorized
     } else {
       const err = new Error('You are not authenticated!');
@@ -63,7 +75,7 @@ function auth(req, res, next) {
       return next(err);
     }
   } else {
-    if (req.signedCookies.user === 'admin') {
+    if (req.session.user === 'admin') {
       return next();
     } else {
         const err = new Error('You are not authenticated!');
