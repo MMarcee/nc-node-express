@@ -1,6 +1,7 @@
 // @Required dependencies:
 const express = require('express');
 const Partner = require('../models/partner');
+const authenticate = require('../authenticate');
 
 const partnerRouter = express.Router();
 
@@ -15,7 +16,7 @@ partnerRouter.route('/')
     })
     .catch(err => next(err)); //If failed return error
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser,(req, res, next) => {
     Partner.create(req.body)
     .then(partner => {
         console.log('Partner Created ', partner);
@@ -26,11 +27,11 @@ partnerRouter.route('/')
     .catch(err => next(err));
 })
 // Operation not allowed due to general context of request -- cannot update all items in document with same information is that is not the intent.
-.put((req, res) => {
+.put(authenticate.verifyUser,(req, res) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /partners');
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser,(req, res, next) => {
     Partner.deleteMany()
     .then(response => {
         res.statusCode = 200;
@@ -50,12 +51,12 @@ partnerRouter.route('/:partnerId')
     })
     .catch(err => next(err));
  })
-.post((req, res) => {
+.post(authenticate.verifyUser,(req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /partners/${req.params.partnerId}`)
 })
 // Operation allowed due to id specific nature of request. Any changes will only be made on the requested id. 
-.put((req, res, next) => {
+.put(authenticate.verifyUser,(req, res, next) => {
     Partner.findByIdAndUpdate(req.params.partnerId, {
         $set: req.body
     }, { new: true })
@@ -66,7 +67,7 @@ partnerRouter.route('/:partnerId')
     })
     .catch(err => next(err));   
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser,(req, res, next) => {
     Partner.findByIdAndDelete(req.params.partnerId)
     .then(response => {
         res.statusCode = 200;
