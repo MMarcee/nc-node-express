@@ -7,10 +7,15 @@ const user = require('../models/user');
 const router = express.Router();
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, function(req, res, next) {
+  if (req.user.admin){
+    return User.find();
+  } else {
+    const err = new Error('You are not an admin!');
+    res.statusCode = 403
+    next(err);
+  };
 });
-
 router.post('/signup', (req, res) => {
   User.register(
     new User({username: req.body.username}),
@@ -64,5 +69,4 @@ router.get('/logout', (req, res, next) => {
   }
 });
 
- 
 module.exports = router;
